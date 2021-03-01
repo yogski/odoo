@@ -1895,16 +1895,15 @@ exports.Orderline = Backbone.Model.extend({
 
         var round_tax = this.pos.company.tax_calculation_rounding_method != 'round_globally';
 
-        var initial_currency_rounding = currency_rounding;
         if(!round_tax)
             currency_rounding = currency_rounding * 0.00001;
 
         // 4) Iterate the taxes in the reversed sequence order to retrieve the initial base of the computation.
-        var recompute_base = function(base_amount, fixed_amount, percent_amount, division_amount){
-             return (base_amount - fixed_amount) / (1.0 + percent_amount / 100.0) * (100 - division_amount) / 100;
+        var recompute_base = function(base_amount, fixed_amount, percent_amount, division_amount, prec){
+             return round_pr((base_amount - fixed_amount) / (1.0 + percent_amount / 100.0) * (100 - division_amount) / 100, prec);
         }
 
-        var base = round_pr(price_unit * quantity, initial_currency_rounding);
+        var base = round_pr(price_unit * quantity, currency_rounding);
 
         var sign = 1;
         if(base < 0){
@@ -1924,7 +1923,7 @@ exports.Orderline = Backbone.Model.extend({
         if (handle_price_include){
             _(taxes.reverse()).each(function(tax){
                 if(tax.include_base_amount){
-                    base = recompute_base(base, incl_fixed_amount, incl_percent_amount, incl_division_amount);
+                    base = recompute_base(base, incl_fixed_amount, incl_percent_amount, incl_division_amount, currency_rounding);
                     incl_fixed_amount = 0.0;
                     incl_percent_amount = 0.0;
                     incl_division_amount = 0.0;
@@ -1951,7 +1950,7 @@ exports.Orderline = Backbone.Model.extend({
             });
         }
 
-        var total_excluded = round_pr(recompute_base(base, incl_fixed_amount, incl_percent_amount, incl_division_amount), initial_currency_rounding);
+        var total_excluded = recompute_base(base, incl_fixed_amount, incl_percent_amount, incl_division_amount, currency_rounding);
         var total_included = total_excluded;
 
         // 5) Iterate the taxes in the sequence order to fill missing base/amount values.
@@ -2041,9 +2040,7 @@ exports.Orderline = Backbone.Model.extend({
             var self = this;
             _(taxes).each(function(tax) {
                 var line_taxes = self._map_tax_fiscal_position(tax);
-                if (line_taxes.length && line_taxes[0].price_include){
-                    new_included_taxes = new_included_taxes.concat(line_taxes);
-                }
+                new_included_taxes = new_included_taxes.concat(line_taxes)
                 if(tax.price_include && !_.contains(line_taxes, tax)){
                     mapped_included_taxes.push(tax);
                 }
@@ -2837,6 +2834,23 @@ exports.Order = Backbone.Model.extend({
             }
             return sum;
         }), 0), this.pos.currency.rounding);
+    },
+    get_total_items: function() {
+        return this.orderLines.length;
+    },
+    get_total_quantity: function() {
+        var sum = 0;
+        this.orderLines.each(function (line) {
+            sum += line.get_quantity();
+        });
+        return sum;
+    },
+    get_total_quantity_str: function() {
+        var sum = 0;
+        this.orderLines.each(function (line) {
+            sum += line.get_quantity();
+        });
+        return sum.toString();
     },
     get_total_tax: function() {
         if (this.pos.company.tax_calculation_rounding_method === "round_globally") {

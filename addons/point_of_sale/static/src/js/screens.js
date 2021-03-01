@@ -662,12 +662,20 @@ var OrderWidget = PosBaseWidget.extend({
         if (!order.get_orderlines().length) {
             return;
         }
+        var lines = order.get_orderlines();
+        var total_quantity = 0;
+        for (var i=0; i<lines.length; i++) {
+            total_quantity += lines[i].get_quantity();
+        }
 
         var total     = order ? order.get_total_with_tax() : 0;
         var taxes     = order ? total - order.get_total_without_tax() : 0;
+        var total_items = lines.length;
 
         this.el.querySelector('.summary .total > .value').textContent = this.format_currency(total);
-        this.el.querySelector('.summary .total .subentry .value').textContent = this.format_currency(taxes);
+        this.el.querySelector('.summary .total .subentry .value').textContent = this.format_currency(taxes);        
+        this.el.querySelector('.summary .total .subentry #total-item').textContent = total_items;
+        this.el.querySelector('.summary .total .subentry #total-quantity').textContent = total_quantity;
     },
     show_product_lot: function(orderline){
         this.pos.get_order().select_orderline(orderline);
@@ -2305,14 +2313,14 @@ var PaymentScreenWidget = ScreenWidget.extend({
         var client = order.get_client();
         if (order.is_to_email() && (!client || client && !utils.is_email(client.email))) {
             var title = !client
-                ? _t('Please select the customer')
-                : _t('Please provide valid email');
+                ? 'Please select the customer'
+                : 'Please provide valid email';
             var body = !client
-                ? _t('You need to select the customer before you can send the receipt via email.')
-                : _t('This customer does not have a valid email address, define one or do not send an email.');
+                ? 'You need to select the customer before you can send the receipt via email.'
+                : 'This customer does not have a valid email address, define one or do not send an email.';
             this.gui.show_popup('confirm', {
-                'title': title,
-                'body': body,
+                'title': _t(title),
+                'body': _t(body),
                 confirm: function () {
                     this.gui.show_screen('clientlist');
                 },

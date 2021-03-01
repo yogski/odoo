@@ -1485,6 +1485,12 @@
                                 <div class='entry total'>
                                     <span class="badge">Total: </span> <span class="value">0.00 €</span>
                                     <div class='subentry'>Taxes: <span class="value">0.00€</span></div>
+                                    <div class='subentry'>Total Item: <span class="value" id="total-item">
+                                        0
+                                    </span></div>
+                                    <div class='subentry'>Total Quantity: <span class="value" id="total-quantity">
+                                        0
+                                    </span></div>
                                 </div>
                             </div>
                         </div>
